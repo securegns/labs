@@ -1,70 +1,47 @@
 import azure.functions as func
 
-# Assuming this is our simple database
-DB = {
-    "J.K. Rowling": ["Harry Potter and the Philosopher's Stone", "Harry Potter and the Chamber of Secrets", "Harry Potter and the Prisoner of Azkaban"],
-    "J.R.R. Tolkien": ["The Hobbit", "The Lord of the Rings"],
-    "George Orwell": ["1984", "Animal Farm"]
-}
-
-HTML_PAGE = """
-<!doctype html>
-<html lang="en">
-  <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- Bootstrap CSS -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-
-    <title>Book Search</title>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Search for a book or author</h1>
-      <form method="POST">
-        <div class="form-group">
-          <input type="text" class="form-control" name="query" placeholder="Enter book title or author">
-        </div>
-        <button type="submit" class="btn btn-primary">Search</button>
-      </form>
-      <br>
-      {results}
-    </div>
-  </body>
+HTML_TEMPLATE = """
+<html>
+    <head>
+        <title>Library Search System</title>
+        <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body class="p-3">
+        <h1>Search for a Book or Author</h1>
+        <form method="POST">
+            <input type="text" class="form-control" name="query" required placeholder="Enter book or author name">
+            <input type="submit" class="btn btn-primary mt-2" value="Search">
+        </form>
+        <br/>
+        {results}
+    </body>
 </html>
 """
 
-def search_db(query):
-    results = []
-    for author, books in DB.items():
-        if query.lower() in author.lower():
-            results.append((author, books))
-        else:
-            for book in books:
-                if query.lower() in book.lower():
-                    results.append((author, [book]))
-    return results
+# A simple dictionary representing our "database"
+DATABASE = {
+    "Author1": ["Book1", "Book2"],
+    "Author2": ["Book3", "Book4"],
+}
 
-def generate_results_html(results):
-    if not results:
-        return "<p>No results found</p>"
-    html = '<table class="table"><thead><tr><th scope="col">Author</th><th scope="col">Books</th></tr></thead><tbody>'
-    for author, books in results:
-        html += f'<tr><td>{author}</td><td>{"<br>".join(books)}</td></tr>'
-    html += "</tbody></table>"
-    return html
+def search(query):
+    """Search for the query in the database and return HTML table of results."""
+    table_rows = ""
+    for author, books in DATABASE.items():
+        if query.lower() in author.lower() or any(query.lower() in book.lower() for book in books):
+            for book in books:
+                table_rows += f"<tr><td>{author}</td><td>{book}</td></tr>"
+    if table_rows:
+        return f"<h2>Results for '{query}'</h2><table class='table'><thead><tr><th>Author</th><th>Book</th></tr></thead><tbody>{table_rows}</tbody></table>"
+    else:
+        return f"<h2>No results found for '{query}'</h2>"
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    query = req.form.get('query')
-    results = ""
+    query = req.form.get("query")
     if query:
-        search_results = search_db(query)
-        results = generate_results_html(search_results)
-    html_content = HTML_PAGE.format(results=results)
-
-    headers = {
-        'Content-Type': 'text/html'
-    }
+        results = search(query)
+    else:
+        results = ""
+    html_content = HTML_TEMPLATE.format(results=results)
+    headers = {"Content-Type": "text/html"}
     return func.HttpResponse(html_content, headers=headers)
