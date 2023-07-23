@@ -8,7 +8,7 @@ HTML_TEMPLATE = """
     </head>
     <body class="p-3">
         <h1>Search for a Book or Author</h1>
-        <form method="POST">
+        <form method="GET">
             <input type="text" class="form-control" name="query" required placeholder="Enter book or author name">
             <input type="submit" class="btn btn-primary mt-2" value="Search">
         </form>
@@ -37,7 +37,7 @@ def search(query):
         return f"<h2>No results found for '{query}'</h2>"
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    query = req.form.get("query")
+    query = req.params.get("query")
     if query:
         results = search(query)
     else:
